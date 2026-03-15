@@ -7,6 +7,9 @@ void main() {
   runApp(AgoraLink());
 }
 
+/*
+ * AgoraLink is the main widget of the app, which sets up the MaterialApp and defines the theme and home page. It serves as the entry point for the application and provides a consistent look and feel across all screens. The HomePage widget is set as the home of the app, which will be displayed when the app is launched.
+ */
 class AgoraLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -40,6 +43,11 @@ class _HomePageState extends State<HomePage> {
     loadWeather();
   }
 
+/*
+ * @return Position - The current position of the user
+ * This function checks if location services are enabled and if the app has permission to access the user's
+ * location.
+ */
   Future<Position> determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -66,7 +74,10 @@ class _HomePageState extends State<HomePage> {
     return data;
   }
 
-  // Maps OpenWeatherMap condition strings to Material icons
+  /*
+   * @param condition - The main weather condition (e.g., "Clear", "Clouds", "Rain")
+   * This function maps the main weather condition to a corresponding Material Icon. It uses a switch statement to return the appropriate icon based on the condition. If the condition is not recognized, it defaults to a generic cloud icon. This allows the app to visually represent the current weather in a simple and intuitive way.
+   */
   IconData getWeatherIcon(String condition) {
     switch (condition.toLowerCase()) {
       case 'clear':
@@ -96,6 +107,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /*
+  * @param lat - Latitude of the user's location
+  * @param lon - Longitude of the user's location
+  * This function fetches the current weather data for the user's location using the OpenWeatherMap API. It then extracts the relevant information (city, temperature, and weather condition) and updates the UI accordingly. The temperature is displayed in Celsius by default, but if the user's country is in the list of Fahrenheit-using countries, it converts it to Fahrenheit before displaying.
+  */
   void loadWeather() async {
     Position pos = await determinePosition();
     var weather = await getWeather(pos.latitude, pos.longitude);
@@ -108,6 +124,8 @@ class _HomePageState extends State<HomePage> {
     String unit = "°C";
     double displayTemp = temp;
 
+
+    //This list stores the countries still using The Imperial System 
     List<String> fahrenheitCountries = ["US", "BS", "KY", "LR", "PW", "FM", "MH"];
     if (fahrenheitCountries.contains(country)) {
       displayTemp = temp * 9 / 5 + 32;
@@ -121,6 +139,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  /*
+  * @param context - The BuildContext of the widget
+  * @return Widget - The widget tree for the HomePage
+  * This is the main build method for the HomePage widget. It constructs the UI of the app, which includes a gradient background, a custom AppBar with a welcome message, a weather widget that displays the current weather conditions, and a list of community events. The weather widget uses the getWeatherIcon function to display an appropriate icon based on the current weather condition. The community events are displayed in a ListView, and there is also a button for accessing the community chat (functionality to be implemented). The overall design is intended to be visually appealing and user-friendly, with a focus on providing relevant information to the user in an accessible way.
+  */
   Widget build(BuildContext context) {
     return Scaffold(
       // Gradient background replacing plain white
