@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
@@ -19,19 +18,16 @@ class AgoraLink extends StatelessWidget {
   }
 }
 
-//Intantiates the homepage of the app, which will display weather and events
 class HomePage extends StatefulWidget {
   @override
-  // ignore: library_private_types_in_public_api
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-
   String weatherText = "Loading weather...";
+  String weatherCondition = "";
 
-
-//THIS IS A PLACEHOLDER: In a real app, this would be fetched from a backend or database, but for this demo we'll just hardcode some events
+  // THIS IS A PLACEHOLDER: In a real app, this would be fetched from a backend or database
   final List<String> events = [
     "Farmers Market - Saturday 9AM",
     "Community Cleanup - Sunday",
@@ -44,21 +40,16 @@ class _HomePageState extends State<HomePage> {
     loadWeather();
   }
 
-//Determine the location of the user, which will be used to fetch weather data for that location
   Future<Position> determinePosition() async {
-
     bool serviceEnabled;
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
-//ERROR HANDLING: If location services are disabled, throw an error
     if (!serviceEnabled) {
       throw Exception("Location services disabled");
     }
 
     permission = await Geolocator.checkPermission();
-
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
@@ -67,107 +58,223 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future getWeather(double lat, double lon) async {
-
-    String apiKey = "7a8cfe0a1bcfec82dea7a8c9d4c25422"; //Please be nice to the API key, it's free to use but has a limit on requests per minute. If you want to test the app more, you can get your own API key for free at https://openweathermap.org/api
-
+    String apiKey = "7a8cfe0a1bcfec82dea7a8c9d4c25422";
     final url =
         "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric";
-
     final response = await http.get(Uri.parse(url));
-
     var data = jsonDecode(response.body);
-
     return data;
   }
 
+  // Maps OpenWeatherMap condition strings to Material icons
+  IconData getWeatherIcon(String condition) {
+    switch (condition.toLowerCase()) {
+      case 'clear':
+        return Icons.wb_sunny_rounded;
+      case 'clouds':
+        return Icons.cloud_rounded;
+      case 'rain':
+      case 'drizzle':
+        return Icons.umbrella_rounded;
+      case 'thunderstorm':
+        return Icons.thunderstorm_rounded;
+      case 'snow':
+        return Icons.ac_unit_rounded;
+      case 'mist':
+      case 'smoke':
+      case 'haze':
+      case 'dust':
+      case 'fog':
+      case 'sand':
+      case 'ash':
+      case 'squall':
+        return Icons.foggy;
+      case 'tornado':
+        return Icons.tornado_rounded;
+      default:
+        return Icons.cloud_queue_rounded;
+    }
+  }
 
   void loadWeather() async {
-
     Position pos = await determinePosition();
-
     var weather = await getWeather(pos.latitude, pos.longitude);
 
+    String country = weather["sys"]["country"];
+    String city = weather["name"];
+    double temp = weather["main"]["temp"];
+    String condition = weather["weather"][0]["main"];
+
+    String unit = "°C";
+    double displayTemp = temp;
+
+    List<String> fahrenheitCountries = ["US", "BS", "KY", "LR", "PW", "FM", "MH"];
+    if (fahrenheitCountries.contains(country)) {
+      displayTemp = temp * 9 / 5 + 32;
+      unit = "°F";
+    }
+
     setState(() {
-      weatherText =
-          "${weather["name"]}  ${weather["main"]["temp"]}°C  ${weather["weather"][0]["main"]}";
+      weatherText = "$city  ${displayTemp.toStringAsFixed(1)}$unit  $condition";
+      weatherCondition = condition;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      appBar: AppBar(
-        title: Align(
-          alignment: Alignment.center,
-          child: 
-            Text( "Welcome to AgoraLink!",
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-            )
-        ),  
-      ),
-
-      body: Padding(
-        padding: EdgeInsets.all(20),
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child:
-            Text(
-              "Local Weather",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            ),
-
-            SizedBox(height: 10),
-
-            Align(
-              alignment: Alignment.center,
-              child:
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red[100],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(weatherText),
-                ),
-                ),
-
-            SizedBox(height: 25),
-
-            Align(
-              alignment: Alignment.center,
-              child: Text(
-                "Community Events",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-            ),
-
-            SizedBox(height: 10),
-
-            Expanded(
-              child: ListView.builder(
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(events[index]),
+      // Gradient background replacing plain white
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFF3F3), // very light warm red/pink
+              Color(0xFFFDE8D8), // soft warm peach
+              Color(0xFFF5F0FF), // barely-there lavender at the bottom
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom AppBar area
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Center(
+                  child: Text(
+                    "Welcome to AgoraLink!",
+                    style: TextStyle(
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red[700],
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
-            ),
 
-            ElevatedButton(
-              onPressed: () {}, //TODO: Implement chat functionality
-              child: Text("Community Chat"),
-            )
-          ],
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 8),
+
+                      // Larger, richer weather widget
+                      Center(
+                        child: Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.red[300]!,
+                                Colors.red[600]!,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 16,
+                                offset: Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(getWeatherIcon(weatherCondition), color: Colors.white, size: 40),
+                              SizedBox(height: 12),
+                              Text(
+                                weatherText,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Extra spacing before the events section
+                      SizedBox(height: 40),
+
+                      Center(
+                        child: Text(
+                          "Community Events",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red[800],
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: 12),
+
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: events.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.75),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.06),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ListTile(
+                                leading: Icon(Icons.event, color: Colors.red[400]),
+                                title: Text(
+                                  events[index],
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {}, // TODO: Implement chat functionality
+                            icon: Icon(Icons.chat_bubble_outline),
+                            label: Text("Community Chat"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[600],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
