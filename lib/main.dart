@@ -331,14 +331,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<Position> determinePosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) throw Exception('Location services disabled');
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    return await Geolocator.getCurrentPosition();
+  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) throw Exception('Location services disabled');
+  LocationPermission permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
   }
+  if (permission == LocationPermission.deniedForever) {
+    throw Exception('Location permissions permanently denied');
+  }
+  return await Geolocator.getCurrentPosition(
+    locationSettings: const LocationSettings(
+      accuracy: LocationAccuracy.low,
+      timeLimit: Duration(seconds: 10),
+    ),
+  );
+}
 
   Future getWeather(double lat, double lon) async {
     final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
