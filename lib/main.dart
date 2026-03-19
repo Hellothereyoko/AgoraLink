@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -330,22 +329,18 @@ class _HomePageState extends State<HomePage> {
     loadActiveNotice();
   }
 
-  Future<Position> determinePosition() async {
-  bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) throw Exception('Location services disabled');
-  LocationPermission permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
+  Future<Map<String, double>> determinePosition() async {
+  // On web, use IP geolocation to avoid browser geolocation quota issues
+  try {
+    final response = await http.get(Uri.parse('https://ipapi.co/json/'));
+    final data = jsonDecode(response.body);
+    return {
+      'lat': (data['latitude'] as num).toDouble(),
+      'lon': (data['longitude'] as num).toDouble(),
+    };
+  } catch (_) {
+    throw Exception('Could not determine location');
   }
-  if (permission == LocationPermission.deniedForever) {
-    throw Exception('Location permissions permanently denied');
-  }
-  return await Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(
-      accuracy: LocationAccuracy.low,
-      timeLimit: Duration(seconds: 10),
-    ),
-  );
 }
 
   Future getWeather(double lat, double lon) async {
@@ -378,27 +373,27 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void loadWeather() async {
-    try {
-      final pos = await determinePosition();
-      final weather = await getWeather(pos.latitude, pos.longitude);
-      final country   = weather['sys']['country'] as String;
-      final city      = weather['name'] as String;
-      double temp     = (weather['main']['temp'] as num).toDouble();
-      final condition = weather['weather'][0]['main'] as String;
-      String unit     = '°C';
-      if (['US','BS','KY','LR','PW','FM','MH'].contains(country)) {
-        temp = temp * 9 / 5 + 32;
-        unit = '°F';
-      }
-      setState(() {
-        weatherText      = '$city  ${temp.toStringAsFixed(1)}$unit  $condition';
-        weatherCondition = condition;
-      });
-    } catch (_) {
-      setState(() { weatherText = 'Could not load weather'; });
+ void loadWeather() async {
+  try {
+    final pos = await determinePosition();
+    final weather = await getWeather(pos['lat']!, pos['lon']!);
+    final country   = weather['sys']['country'] as String;
+    final city      = weather['name'] as String;
+    double temp     = (weather['main']['temp'] as num).toDouble();
+    final condition = weather['weather'][0]['main'] as String;
+    String unit     = '°C';
+    if (['US','BS','KY','LR','PW','FM','MH'].contains(country)) {
+      temp = temp * 9 / 5 + 32;
+      unit = '°F';
     }
+    setState(() {
+      weatherText      = '$city  ${temp.toStringAsFixed(1)}$unit  $condition';
+      weatherCondition = condition;
+    });
+  } catch (_) {
+    setState(() { weatherText = 'Could not load weather'; });
   }
+}
 
   void loadEventsFromFirebase() {
     _firestore.collection('events').snapshots().listen((snapshot) {
