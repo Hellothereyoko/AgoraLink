@@ -3,21 +3,34 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(AgoraLink());
 }
 
 /*
- * AgoraLink is the main widget of the app, which sets up the MaterialApp and defines the theme and home page. It serves as the entry point for the application and provides a consistent look and feel across all screens. The HomePage widget is set as the home of the app, which will be displayed when the app is launched.
+ * AgoraLink is the main widget of the app, which sets up the MaterialApp and defines the theme and home page.
  */
 class AgoraLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AgoraLink',
-      theme: ThemeData(primarySwatch: Colors.red),
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+          brightness: Brightness.light,
+        ),
+      ),
       home: HomePage(),
     );
   }
@@ -32,24 +45,20 @@ class _HomePageState extends State<HomePage> {
   String weatherText = "Loading weather...";
   String weatherCondition = "";
 
-  // THIS IS A PLACEHOLDER: In a real app, this would be fetched from a backend or database
-  final List<String> events = [
-    "Farmers Market - Saturday 9AM",
-    "Community Cleanup - Sunday",
-    "City Council Meeting - Tuesday"
-  ];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  List<String> events = [];
 
   @override
   void initState() {
     super.initState();
     loadWeather();
+    loadEventsFromFirebase();
   }
 
-/*
- * @return Position - The current position of the user
- * This function checks if location services are enabled and if the app has permission to access the user's
- * location.
- */
+  /*
+   * Checks if location services are enabled and if the app has permission to
+   * access the user's location.
+   */
   Future<Position> determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -67,6 +76,11 @@ class _HomePageState extends State<HomePage> {
     return await Geolocator.getCurrentPosition();
   }
 
+  /*
+   * Fetches weather data from the OpenWeatherMap API based on the user's location.
+   * API key is loaded from .env via flutter_dotenv.
+   * TODO: API key protection needed ASAP!
+   */
   Future getWeather(double lat, double lon) async {
     String apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
     if (apiKey.isEmpty) {
@@ -80,8 +94,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   /*
-   * @param condition - The main weather condition (e.g., "Clear", "Clouds", "Rain")
-   * This function maps the main weather condition to a corresponding Material Icon. It uses a switch statement to return the appropriate icon based on the condition. If the condition is not recognized, it defaults to a generic cloud icon. This allows the app to visually represent the current weather in a simple and intuitive way.
+   * Maps a main weather condition string to a Material Icon.
    */
   IconData getWeatherIcon(String condition) {
     switch (condition.toLowerCase()) {
@@ -113,72 +126,85 @@ class _HomePageState extends State<HomePage> {
   }
 
   /*
-  * @param lat - Latitude of the user's location
-  * @param lon - Longitude of the user's location
-  * This function fetches the current weather data for the user's location using the OpenWeatherMap API. It then extracts the relevant information (city, temperature, and weather condition) and updates the UI accordingly. The temperature is displayed in Celsius by default, but if the user's country is in the list of Fahrenheit-using countries, it converts it to Fahrenheit before displaying.
-  */
+   * Fetches the current weather for the user's location and updates the UI.
+   * Converts to Fahrenheit for countries that use the Imperial system.
+   */
   void loadWeather() async {
-    Position pos = await determinePosition();
-    var weather = await getWeather(pos.latitude, pos.longitude);
+    try {
+      Position pos = await determinePosition();
+      var weather = await getWeather(pos.latitude, pos.longitude);
 
-    String country = weather["sys"]["country"];
-    String city = weather["name"];
-    double temp = weather["main"]["temp"];
-    String condition = weather["weather"][0]["main"];
+      String country = weather["sys"]["country"];
+      String city = weather["name"];
+      double temp = weather["main"]["temp"];
+      String condition = weather["weather"][0]["main"];
 
-    String unit = "°C";
-    double displayTemp = temp;
+      String unit = "°C";
+      double displayTemp = temp;
 
+      List<String> fahrenheitCountries = ["US", "BS", "KY", "LR", "PW", "FM", "MH"];
+      if (fahrenheitCountries.contains(country)) {
+        displayTemp = temp * 9 / 5 + 32;
+        unit = "°F";
+      }
 
-    //This list stores the countries still using The Imperial System 
-    List<String> fahrenheitCountries = ["US", "BS", "KY", "LR", "PW", "FM", "MH"];
-    if (fahrenheitCountries.contains(country)) {
-      displayTemp = temp * 9 / 5 + 32;
-      unit = "°F";
+      setState(() {
+        weatherText = "$city  ${displayTemp.toStringAsFixed(1)}$unit  $condition";
+        weatherCondition = condition;
+      });
+    } catch (e) {
+      setState(() {
+        weatherText = "Could not load weather";
+      });
     }
+  }
 
-    setState(() {
-      weatherText = "$city  ${displayTemp.toStringAsFixed(1)}$unit  $condition";
-      weatherCondition = condition;
+  /*
+   * Loads community events from Firestore and listens for real-time updates.
+   */
+  void loadEventsFromFirebase() {
+    _firestore.collection('events').snapshots().listen((snapshot) {
+      List<String> loadedEvents = [];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['title'] != null) {
+          loadedEvents.add(data['title'] as String);
+        }
+      }
+      setState(() {
+        events = loadedEvents;
+      });
+    }, onError: (error) {
+      // ignore: avoid_print
+      print('Error loading events: $error');
     });
   }
 
   @override
-  /*
-  * @param context - The BuildContext of the widget
-  * @return Widget - The widget tree for the HomePage
-  * This is the main build method for the HomePage widget. It constructs the UI of the app, which includes a gradient background, a custom AppBar with a welcome message, a weather widget that displays the current weather conditions, and a list of community events. The weather widget uses the getWeatherIcon function to display an appropriate icon based on the current weather condition. The community events are displayed in a ListView, and there is also a button for accessing the community chat (functionality to be implemented). The overall design is intended to be visually appealing and user-friendly, with a focus on providing relevant information to the user in an accessible way.
-  */
   Widget build(BuildContext context) {
     return Scaffold(
-      // Gradient background replacing plain white
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFF3F3), // very light warm red/pink
-              Color(0xFFFDE8D8), // soft warm peach
-              Color(0xFFF5F0FF), // barely-there lavender at the bottom
-            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.red[50]!, Colors.white],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Custom AppBar area
+              // AppBar-style header
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Center(
-                  child: Text(
-                    "Welcome to AgoraLink!",
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red[700],
-                    ),
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                child: Text(
+                  "Welcome to AgoraLink!",
+                  style: TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
 
@@ -190,7 +216,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       SizedBox(height: 8),
 
-                      // Larger, richer weather widget
+                      // Weather widget
                       Center(
                         child: Container(
                           width: double.infinity,
@@ -199,10 +225,7 @@ class _HomePageState extends State<HomePage> {
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
-                                Colors.red[300]!,
-                                Colors.red[600]!,
-                              ],
+                              colors: [Colors.red[300]!, Colors.red[600]!],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
@@ -232,7 +255,6 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      // Extra spacing before the events section
                       SizedBox(height: 40),
 
                       Center(
@@ -308,3 +330,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// Add more widgets for each community's needs! This is completely customizable.
+// The weather and events widgets are just examples — add anything you want!

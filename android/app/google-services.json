@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "584111037389",
+    "firebase_url": "https://agoralink-276ea-default-rtdb.firebaseio.com",
+    "project_id": "agoralink-276ea",
+    "storage_bucket": "agoralink-276ea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584111037389:android:cb47357becf69ec6ae0284",
+        "android_client_info": {
+          "package_name": "com.example.agoralink"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqo0MdtfnDv-yDLI4wqzcTJgPfc6jSdrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
