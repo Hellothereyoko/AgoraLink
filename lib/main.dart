@@ -46,11 +46,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Navigate to HomePage after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => HomePage()),
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => HomePage(),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
         );
       }
     });
@@ -72,26 +76,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo — replace with your own Image.asset() once you have one
-            Container(
+            Image.asset(
+              'assets/images/logo.png',
               width: 120,
               height: 120,
-              decoration: BoxDecoration(
-                color: Colors.red[700],
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.location_city_rounded,
-                color: Colors.white,
-                size: 64,
-              ),
+              fit: BoxFit.contain,
             ),
 
             const SizedBox(height: 24),
@@ -348,7 +337,7 @@ class _HomePageState extends State<HomePage> {
     return await Geolocator.getCurrentPosition();
   }
 
-
+  // TODO: API key protection needed ASAP!
   Future getWeather(double lat, double lon) async {
     final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
     if (apiKey.isEmpty) throw Exception('API key not configured');
@@ -375,7 +364,7 @@ class _HomePageState extends State<HomePage> {
       case 'ash':
       case 'squall':       return Icons.foggy;
       case 'tornado':      return Icons.tornado_rounded;
-      default:             return Icons.cloud_queue_rounded;
+      default:             return Icons.help_outline_rounded;
     }
   }
 
