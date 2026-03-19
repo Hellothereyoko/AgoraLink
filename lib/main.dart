@@ -329,14 +329,15 @@ class _HomePageState extends State<HomePage> {
     loadActiveNotice();
   }
 
-  Future<Map<String, double>> determinePosition() async {
-  // On web, use IP geolocation to avoid browser geolocation quota issues
+ Future<Map<String, double>> determinePosition() async {
   try {
-    final response = await http.get(Uri.parse('https://ipapi.co/json/'));
+    final response = await http.get(
+      Uri.parse('https://get.geojs.io/v1/ip/geo.json'),
+    );
     final data = jsonDecode(response.body);
     return {
-      'lat': (data['latitude'] as num).toDouble(),
-      'lon': (data['longitude'] as num).toDouble(),
+      'lat': double.parse(data['latitude'].toString()),
+      'lon': double.parse(data['longitude'].toString()),
     };
   } catch (_) {
     throw Exception('Could not determine location');
