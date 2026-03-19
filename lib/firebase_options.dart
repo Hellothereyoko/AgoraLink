@@ -50,7 +50,6 @@ class DefaultFirebaseOptions {
     databaseURL: 'https://agoralink-276ea-default-rtdb.firebaseio.com',
   );
 
-//TODO: Replace the placeholder values with your actual Firebase project configuration values for iOS, macOS, web, windows, and linux platforms. You can find these values in your Firebase project settings.
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCqo0MdtfnDv-yDLI4wqzcTJgPfc6jSdrw',
     appId: '1:584111037389:ios:cb47357becf69ec6ae0284',
@@ -60,7 +59,6 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.agoralink',
   );
 
-//TODO: Replace the placeholder values with your actual Firebase project configuration values for iOS, macOS, web, windows, and linux platforms. You can find these values in your Firebase project settings.
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCqo0MdtfnDv-yDLI4wqzcTJgPfc6jSdrw',
     appId: '1:584111037389:ios:cb47357becf69ec6ae0284',
@@ -70,7 +68,6 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.agoralink',
   );
 
-//TODO: Replace the placeholder values with your actual Firebase project configuration values for iOS, macOS, web, windows, and linux platforms. You can find these values in your Firebase project settings.
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCqo0MdtfnDv-yDLI4wqzcTJgPfc6jSdrw',
     appId: '1:584111037389:web:cb47357becf69ec6ae0284',
