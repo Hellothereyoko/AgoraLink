@@ -123,8 +123,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
+// ignore: use_key_in_widget_constructors
 class HomePage extends StatefulWidget {
   @override
+  // ignore: library_private_types_in_public_api
   _HomePageState createState() => _HomePageState();
 }
 
@@ -167,9 +169,10 @@ class _TickerPainter extends CustomPainter {
 // ---------------------------------------------------------------------------
 class NoticeTicker extends StatefulWidget {
   final List<String> notices;
-  const NoticeTicker({Key? key, required this.notices}) : super(key: key);
+  const NoticeTicker({super.key, required this.notices});
 
   @override
+  // ignore: library_private_types_in_public_api
   _NoticeTickerState createState() => _NoticeTickerState();
 }
 
@@ -337,7 +340,6 @@ class _HomePageState extends State<HomePage> {
     return await Geolocator.getCurrentPosition();
   }
 
-  // TODO: API key protection needed ASAP!
   Future getWeather(double lat, double lon) async {
     final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
     if (apiKey.isEmpty) throw Exception('API key not configured');
