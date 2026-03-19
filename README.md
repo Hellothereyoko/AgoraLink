@@ -1,17 +1,13 @@
-# agoralink
+# AgoraLink
 
-A new Flutter project.
+A community oriented information software to focus on informing the public of events and encouraging connection. Based on 
+my trek to The Land of The Rising Sun. I've learned a lot from them, and plan to bring it back to America!
 
-## Getting Started
+## Platforms
 
-This project is a starting point for a Flutter application.
+- Web Browser
+- APK
+- Linux
+- IOS
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Other platforms need to be compiled in flutter by using the flutter build command. Additional documentation can be found on flutter's website. This app is made in C++, Java, and Dart.
