@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load();
   runApp(AgoraLink());
 }
 
@@ -66,7 +68,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future getWeather(double lat, double lon) async {
-    String apiKey = "7a8cfe0a1bcfec82dea7a8c9d4c25422";
+    String apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      throw Exception("API key not configured");
+    }
     final url =
         "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric";
     final response = await http.get(Uri.parse(url));
