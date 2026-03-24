@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -33,9 +32,6 @@ class AgoraLink extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Splash Screen
-// ---------------------------------------------------------------------------
 class SplashScreen extends StatefulWidget {
   @override
   _SplashScreenState createState() => _SplashScreenState();
@@ -81,9 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 120,
               fit: BoxFit.contain,
             ),
-
             const SizedBox(height: 24),
-
             Text(
               'AgoraLink',
               style: TextStyle(
@@ -93,9 +87,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 1.2,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Your community, connected.',
               style: TextStyle(
@@ -104,9 +96,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 0.4,
               ),
             ),
-
             const SizedBox(height: 48),
-
             SizedBox(
               width: 32,
               height: 32,
@@ -122,10 +112,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// ignore: use_key_in_widget_constructors
 class HomePage extends StatefulWidget {
   @override
-  // ignore: library_private_types_in_public_api
   _HomePageState createState() => _HomePageState();
 }
 
@@ -136,9 +124,6 @@ class Event {
   Event({required this.title, required this.info, this.dateandtime});
 }
 
-// ---------------------------------------------------------------------------
-// TickerPainter — draws scrolling text via CustomPainter
-// ---------------------------------------------------------------------------
 class _TickerPainter extends CustomPainter {
   final String text;
   final double offset;
@@ -153,7 +138,6 @@ class _TickerPainter extends CustomPainter {
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout(minWidth: 0, maxWidth: double.infinity);
-
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
     tp.paint(canvas, Offset(offset, (size.height - tp.height) / 2));
   }
@@ -163,15 +147,11 @@ class _TickerPainter extends CustomPainter {
       old.text != text || old.offset != offset;
 }
 
-// ---------------------------------------------------------------------------
-// NoticeTicker
-// ---------------------------------------------------------------------------
 class NoticeTicker extends StatefulWidget {
   final List<String> notices;
   const NoticeTicker({super.key, required this.notices});
 
   @override
-  // ignore: library_private_types_in_public_api
   _NoticeTickerState createState() => _NoticeTickerState();
 }
 
@@ -232,20 +212,16 @@ class _NoticeTickerState extends State<NoticeTicker>
 
   void _onTick(Duration elapsed) {
     if (!mounted || widget.notices.isEmpty) return;
-
     final w = context.size?.width ?? 400;
-
     if (_offset == double.infinity) {
       _offset = w;
       _prev = elapsed;
       setState(() {});
       return;
     }
-
     if (_prev != null) {
       final dt = (elapsed - _prev!).inMicroseconds / 1e6;
       _offset -= _pxPerSecond * dt;
-
       if (_offset < -_textWidth) {
         _currentIndex = (_currentIndex + 1) % widget.notices.length;
         _measureText(_currentIndex);
@@ -253,7 +229,6 @@ class _NoticeTickerState extends State<NoticeTicker>
         return;
       }
     }
-
     _prev = elapsed;
     setState(() {});
   }
@@ -268,7 +243,6 @@ class _NoticeTickerState extends State<NoticeTicker>
   Widget build(BuildContext context) {
     if (widget.notices.isEmpty) return const SizedBox.shrink();
     final currentText = widget.notices[_currentIndex];
-
     return Container(
       width: double.infinity,
       color: Colors.red[700],
@@ -309,10 +283,6 @@ class _NoticeTickerState extends State<NoticeTicker>
   }
 }
 
-// ---------------------------------------------------------------------------
-// App state
-// ---------------------------------------------------------------------------
-
 class _HomePageState extends State<HomePage> {
   String weatherText = 'Loading weather...';
   String weatherCondition = '';
@@ -329,23 +299,31 @@ class _HomePageState extends State<HomePage> {
     loadActiveNotice();
   }
 
- Future<Map<String, double>> determinePosition() async {
-  try {
-    final response = await http.get(
-      Uri.parse('https://get.geojs.io/v1/ip/geo.json'),
-    );
-    final data = jsonDecode(response.body);
-    return {
-      'lat': double.parse(data['latitude'].toString()),
-      'lon': double.parse(data['longitude'].toString()),
-    };
-  } catch (_) {
-    throw Exception('Could not determine location');
+  Future<Map<String, double>> determinePosition() async {
+    try {
+      final response = await http.get(Uri.parse('https://ipapi.co/json/'));
+      final data = jsonDecode(response.body);
+      return {
+        'lat': (data['latitude'] as num).toDouble(),
+        'lon': (data['longitude'] as num).toDouble(),
+      };
+    } catch (e) {
+      throw Exception('IP location failed: $e');
+    }
   }
-}
+
+  Future<String> getApiKey() async {
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    await remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 10),
+      minimumFetchInterval: const Duration(hours: 0),
+    ));
+    await remoteConfig.fetchAndActivate();
+    return remoteConfig.getString('openweather_api_key');
+  }
 
   Future getWeather(double lat, double lon) async {
-    final apiKey = dotenv.env['OPENWEATHER_API_KEY'] ?? '';
+    final apiKey = await getApiKey();
     if (apiKey.isEmpty) throw Exception('API key not configured');
     final url =
         'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric';
@@ -374,27 +352,29 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
- void loadWeather() async {
-  try {
-    final pos = await determinePosition();
-    final weather = await getWeather(pos['lat']!, pos['lon']!);
-    final country   = weather['sys']['country'] as String;
-    final city      = weather['name'] as String;
-    double temp     = (weather['main']['temp'] as num).toDouble();
-    final condition = weather['weather'][0]['main'] as String;
-    String unit     = '°C';
-    if (['US','BS','KY','LR','PW','FM','MH'].contains(country)) {
-      temp = temp * 9 / 5 + 32;
-      unit = '°F';
+  void loadWeather() async {
+    try {
+      final pos = await determinePosition();
+      final weather = await getWeather(pos['lat']!, pos['lon']!);
+      final country   = weather['sys']['country'] as String;
+      final city      = weather['name'] as String;
+      double temp     = (weather['main']['temp'] as num).toDouble();
+      final condition = weather['weather'][0]['main'] as String;
+      String unit     = '°C';
+      if (['US','BS','KY','LR','PW','FM','MH'].contains(country)) {
+        temp = temp * 9 / 5 + 32;
+        unit = '°F';
+      }
+      setState(() {
+        weatherText      = '$city  ${temp.toStringAsFixed(1)}$unit  $condition';
+        weatherCondition = condition;
+      });
+    } catch (e, stack) {
+      print('WEATHER ERROR: $e');
+      print('STACK: $stack');
+      setState(() { weatherText = 'Error: $e'; });
     }
-    setState(() {
-      weatherText      = '$city  ${temp.toStringAsFixed(1)}$unit  $condition';
-      weatherCondition = condition;
-    });
-  } catch (_) {
-    setState(() { weatherText = 'Could not load weather'; });
   }
-}
 
   void loadEventsFromFirebase() {
     _firestore.collection('events').snapshots().listen((snapshot) {
