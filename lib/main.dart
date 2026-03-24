@@ -34,6 +34,7 @@ class AgoraLink extends StatelessWidget {
 
 class SplashScreen extends StatefulWidget {
   @override
+  // ignore: library_private_types_in_public_api
   _SplashScreenState createState() => _SplashScreenState();
 }
 
@@ -45,8 +46,8 @@ class _SplashScreenState extends State<SplashScreen> {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => HomePage(),
-            transitionsBuilder: (_, animation, __, child) =>
+            pageBuilder: (_, _, _) => HomePage(),
+            transitionsBuilder: (_, animation, _, child) =>
                 FadeTransition(opacity: animation, child: child),
             transitionDuration: const Duration(milliseconds: 500),
           ),
@@ -114,6 +115,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
 class HomePage extends StatefulWidget {
   @override
+  // ignore: library_private_types_in_public_api
   _HomePageState createState() => _HomePageState();
 }
 
@@ -152,6 +154,7 @@ class NoticeTicker extends StatefulWidget {
   const NoticeTicker({super.key, required this.notices});
 
   @override
+  // ignore: library_private_types_in_public_api
   _NoticeTickerState createState() => _NoticeTickerState();
 }
 
@@ -452,6 +455,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
+                            // ignore: deprecated_member_use
                             BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 6)),
                           ],
                         ),
@@ -490,8 +494,10 @@ class _HomePageState extends State<HomePage> {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               decoration: BoxDecoration(
+                                // ignore: deprecated_member_use
                                 color: Colors.white.withOpacity(0.75),
                                 borderRadius: BorderRadius.circular(14),
+                                // ignore: deprecated_member_use
                                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
                               ),
                               child: ListTile(
